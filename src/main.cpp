@@ -4,6 +4,7 @@
 
 #include <Arduino.h>
 #include <LovyanGFX.hpp>
+#include "grafx.h"
 
 // ============================================================================
 // CONFIGURATION
@@ -25,202 +26,20 @@
 #define MAX_EXPLOSIONS 10
 #define MAX_PARTICLES 50
 
-// player_ship_map - 24x24 pixels, RGB565 format
-const uint16_t player_ship_map[] PROGMEM = {
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xc67a, 0xc67a, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xa6de, 0xaebd, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x8edf, 0x96de, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xeefb, 0x6e9f, 0x86df, 0xeefa, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xdefb, 0x4e3f, 0x667f, 0xe6fb, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xd73d, 0x4e1e, 0x5e3e, 0xd71c, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xb5f7, 0xbf7f, 0x4456, 0x4cb7, 0xcf9f, 0xa5b6, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x8d56, 0xdf3c, 0xa73f, 0x3b31, 0x3b93, 0xb77f, 0xd6fb, 0x8535, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x9db7, 0xc6fc, 0xe73c, 0x86df, 0x428e, 0x3af0, 0x971f, 0xe73c, 0xc6fc, 0x9db7, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xadf8, 0xdf5e, 0xcefc, 0xe77d, 0x6e3e, 0x422c, 0x426d, 0x7e9e, 0xe75d, 0xcefc, 0xdf5e, 0xa5f8, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xb659, 0xdf5d, 0xd71c, 0xcedb, 0xe79e, 0x559b, 0x49ea, 0x420b, 0x5ddc, 0xef9e, 0xc6db, 0xd71d, 0xdf5e, 0xb639, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x8d55, 0xc6bb, 0xdf3d, 0xd71c, 0xcefc, 0xd6fc, 0xd79f, 0x44b8, 0x49ca, 0x49ca, 0x4519, 0xdf9f, 0xcefb, 0xcefc, 0xd71c, 0xdf3d, 0xbe9b, 0x8d55, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x1416, 0x8577, 0xd71c, 0xd73d, 0xd6fc, 0xd71d, 0xc6dc, 0xe73c, 0xb75f, 0x3bd4, 0x4988, 0x4988, 0x3c15, 0xcf9f, 0xdf1c, 0xcefc, 0xd71d, 0xd6fc, 0xd73d, 0xcefc, 0x7d77, 0x0c16, 0x0000,
-  0x1c98, 0x35de, 0xb6dc, 0xdf3d, 0xd71c, 0xd71c, 0xd71d, 0xc6dc, 0xf77d, 0x96ff, 0x33b4, 0x4a6d, 0x4a6d, 0x33d5, 0xaf3f, 0xef5c, 0xc6dc, 0xd71d, 0xd71c, 0xd71c, 0xdf3d, 0xb6dc, 0x35de, 0x1c78,
-  0x24d9, 0x361f, 0x9e9c, 0xd71c, 0xd71d, 0xd71c, 0xd71c, 0xc6dc, 0xf79e, 0x767e, 0x2dbe, 0x3dfe, 0x3dfe, 0x2dbe, 0x869e, 0xf79d, 0xc6dc, 0xd71c, 0xd71c, 0xd71d, 0xd71c, 0x967c, 0x361f, 0x24b9,
-  0x0000, 0x2dbe, 0x765d, 0xd6fc, 0xd71c, 0xd71c, 0xcefc, 0xcefc, 0xf79e, 0x563e, 0x2dde, 0x3dde, 0x3dfe, 0x2dde, 0x665e, 0xffbe, 0xc6fc, 0xd6fc, 0xd71c, 0xd71c, 0xd6fc, 0x6e5d, 0x259d, 0x0000,
-  0x0000, 0x24fa, 0x565e, 0xcedb, 0xd71e, 0xd71e, 0xcedc, 0xdf3c, 0xe77e, 0x3dfe, 0x35de, 0x35de, 0x35de, 0x35de, 0x4e1e, 0xef9e, 0xd71c, 0xcefc, 0xd71e, 0xd71e, 0xc6db, 0x4e5f, 0x1cd9, 0x0000,
-  0x0000, 0x1c77, 0x3e3f, 0xbedc, 0xe6f5, 0xdef6, 0xc6dc, 0xdf3c, 0xef9e, 0x45fe, 0x35de, 0x35de, 0x3dde, 0x2dde, 0x563e, 0xf7be, 0xd73c, 0xc6dc, 0xdef5, 0xe6f6, 0xb6bc, 0x35ff, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x253c, 0x9e9a, 0xfe40, 0xeeaa, 0xbede, 0xcedb, 0xffbe, 0x665e, 0x2dde, 0x3dfe, 0x3dfe, 0x2dde, 0x7e7e, 0xffbe, 0xc6db, 0xc6dd, 0xf687, 0xfe40, 0x969c, 0x1d1b, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x1499, 0x769e, 0xfe62, 0xf686, 0xcefd, 0xbebb, 0xf79d, 0x8ebe, 0x2dbe, 0x3dfe, 0x3dfe, 0x2dbe, 0xa6fe, 0xf79d, 0xbebb, 0xcefc, 0xfe63, 0xfe84, 0x667f, 0x0c58, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x4dde, 0xf688, 0xfe41, 0xdf3c, 0xbefc, 0xdf3c, 0xb71e, 0x2dde, 0x3dfe, 0x35de, 0x2dde, 0xcf3e, 0xdf1c, 0xc6fd, 0xdf1a, 0xfe40, 0xe6ac, 0x3d9d, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x24fc, 0xced1, 0xf5e0, 0xb5f4, 0x8d77, 0xc638, 0xdf9f, 0x35de, 0x35de, 0x35de, 0x45fe, 0xef9e, 0xb5f7, 0x9598, 0xbe13, 0xfde0, 0xbed4, 0x1cbb, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x7d53, 0x0000, 0x0000, 0x0000, 0x0000, 0xef5d, 0x563f, 0x35ff, 0x2dde, 0x667f, 0xef3c, 0x0000, 0x0000, 0x0000, 0xd4c0, 0x6d54, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xdeba, 0x65bb, 0x1cb9, 0x14b9, 0x75fb, 0xe6ba, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-};
-// Total pixels: 576 (24x24)
-// Memory size: 1152 bytes
-
-// enemy_basic_map - 20x20 pixels, RGB565 format
-const uint16_t enemy_basic_map[] PROGMEM = {
-  0x0000, 0x0000, 0x0000, 0xb596, 0xe71b, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xe71c, 0xad76, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x62ed, 0xc5f8, 0xef5c, 0xce79, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xce99, 0xef5d, 0xbdb7, 0x62cd, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x526b, 0x62ce, 0x526c, 0xad56, 0xffff, 0xce79, 0x0000, 0x0000, 0x0000, 0x0000, 0xd69a, 0xffff, 0xa4d4, 0x524c, 0x62ee, 0x526b, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x62ee, 0x62cd, 0x5aad, 0x6b0e, 0xf79e, 0xe71c, 0x0000, 0x0000, 0x0000, 0x0000, 0xe73c, 0xef5d, 0x62cd, 0x62cd, 0x62cd, 0x62cd, 0x0000, 0x0000,
-  0x0000, 0x5a8c, 0x62ee, 0x62cd, 0x62cd, 0x62ad, 0xd69a, 0xd6ba, 0xc638, 0xce79, 0xce79, 0xc638, 0xdedb, 0xce59, 0x5aad, 0x62cd, 0x62cd, 0x62ee, 0x5a6c, 0x0000,
-  0x524b, 0x62ee, 0x62cd, 0x5aad, 0x62ad, 0x62ad, 0xa4f4, 0xd6ba, 0xffdf, 0xffdf, 0xffdf, 0xffdf, 0xd69a, 0x9cd4, 0x5aad, 0x5aad, 0x5aad, 0x62cd, 0x62ee, 0x524b,
-  0x5a6c, 0x5aad, 0x5a8c, 0x5a8c, 0x5a6c, 0x736f, 0xce59, 0xe71c, 0xef7d, 0xef7d, 0xef7d, 0xef7d, 0xe71c, 0xc638, 0x6b2e, 0x5a6c, 0x5a8c, 0x5a8c, 0x62ad, 0x526c,
-  0x524b, 0x5a8c, 0x5a8c, 0x5a8c, 0x526c, 0x736f, 0xd6ba, 0xe6fc, 0xef7d, 0xef7d, 0xef7d, 0xef7d, 0xdefc, 0xd6ba, 0x734f, 0x526c, 0x5a8c, 0x5a8c, 0x5aac, 0x524b,
-  0x0000, 0x5a8c, 0x5a8c, 0x5a8c, 0x526c, 0x736f, 0xd6ba, 0xe6fc, 0xf79e, 0xf79e, 0xf79e, 0xef9d, 0xdefb, 0xd69a, 0x6b4e, 0x526c, 0x5a8c, 0x5a8c, 0x5a8c, 0x0000,
-  0x0000, 0x524b, 0x5aac, 0x5a8c, 0x526c, 0x736f, 0xd6ba, 0xe71c, 0xe73c, 0xdedb, 0xdedb, 0xe73c, 0xe71c, 0xd69a, 0x6b4e, 0x526c, 0x5a8c, 0x5aad, 0x524b, 0x0000,
-  0x0000, 0x524b, 0x5aad, 0x5a8c, 0x5a8c, 0x62ed, 0xc638, 0xce7a, 0x522b, 0x41ca, 0x41aa, 0x524c, 0xd69a, 0xc618, 0x62cd, 0x5a8c, 0x5a8c, 0x62ad, 0x524b, 0x0000,
-  0x0000, 0x0000, 0x5a8c, 0x5aad, 0x62cd, 0xc5f8, 0xd6ba, 0xce59, 0x736f, 0x6b2e, 0x6b0e, 0x7b90, 0xce79, 0xd6ba, 0xbdd8, 0x62cd, 0x5aad, 0x5a8c, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x5a8c, 0x62cd, 0x6b0e, 0xdefb, 0xbdd7, 0xce59, 0xf7be, 0xef7d, 0xef7d, 0xf7be, 0xc638, 0xbe17, 0xdefb, 0x62ee, 0x62ee, 0x526c, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x526b, 0x6aee, 0x5a8c, 0xc639, 0x0000, 0xa534, 0xc618, 0xb5b6, 0xb5b6, 0xc638, 0x0000, 0x0000, 0xc619, 0x5a6c, 0x6aee, 0x524b, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x62cd, 0x5a6c, 0xad56, 0xe71c, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xe71b, 0xad15, 0x5a6c, 0x62cd, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x5a8c, 0x5a8d, 0x8c12, 0xdefb, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xdedb, 0x83d1, 0x62ad, 0x5a8c, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x524b, 0x62ce, 0x6b0e, 0xd69a, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xd67a, 0x62ee, 0x62ee, 0x524b, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x62cd, 0x5a8c, 0xce59, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xce39, 0x5a6c, 0x62ad, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x5a8c, 0x5a8d, 0xad15, 0xdefb, 0x0000, 0x0000, 0x0000, 0x0000, 0xdefb, 0xa4f5, 0x5a8d, 0x5a8c, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x524b, 0x5a6c, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x5a6c, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-};
-// Total pixels: 400 (20x20)
-// Memory size: 800 bytes
-
-// enemy_fast_map - 16x16 pixels, RGB565 format
-const uint16_t enemy_fast_map[] PROGMEM = {
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xd6ba, 0xd6ba, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xe71c, 0xffdf, 0xffdf, 0xe71c, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xbdd7, 0xffff, 0xef7d, 0xef7d, 0xffff, 0xbdd7, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x526b, 0xbdd7, 0xf79e, 0xef7d, 0xef7d, 0xf79e, 0xbdf7, 0x526c, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x5a8c, 0x6aee, 0xc618, 0xf7be, 0xf79e, 0xf79e, 0xf7be, 0xc618, 0x6aee, 0x5a8c, 0x0000, 0x0000, 0x0000,
-  0x524b, 0x526c, 0x5a6c, 0x62cd, 0x62ed, 0xce59, 0xd6ba, 0xd67a, 0xd69a, 0xd6bb, 0xce59, 0x62ed, 0x62cd, 0x5a6c, 0x526b, 0x524b,
-  0x526c, 0x5a8c, 0x5aac, 0x5a8c, 0x9cb3, 0xce59, 0x524b, 0x4a0b, 0x524c, 0x5a8d, 0xce59, 0x9cb3, 0x5a8c, 0x5aac, 0x5a8c, 0x526c,
-  0x524b, 0x5aad, 0x5a8c, 0x5a8c, 0xbdb7, 0xd6ba, 0x5a8d, 0x41aa, 0x4a0b, 0x62ee, 0xd6ba, 0xb597, 0x5a8c, 0x5a8c, 0x5aad, 0x524b,
-  0x0000, 0x526c, 0x5aac, 0x524b, 0xa515, 0xe73c, 0x8c32, 0x41aa, 0x4a0b, 0x9453, 0xe71b, 0xa515, 0x524b, 0x5aac, 0x526c, 0x0000,
-  0x0000, 0x524b, 0x62cd, 0x524b, 0x9473, 0xe75c, 0xb596, 0x41a9, 0x49eb, 0xb5b7, 0xe73c, 0x9473, 0x524b, 0x62cd, 0x524b, 0x0000,
-  0x0000, 0x0000, 0x5a8c, 0x524c, 0x83d1, 0xe73c, 0xce59, 0x9473, 0x9493, 0xce59, 0xe73c, 0x83d1, 0x524c, 0x5a8c, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x524b, 0x5a8c, 0x6b2e, 0xe73c, 0xce59, 0xef7d, 0xef7d, 0xce59, 0xe73c, 0x6b2e, 0x5a8c, 0x524b, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x5a8c, 0x5aad, 0xdefc, 0xce79, 0xbdd7, 0xbdd7, 0xce79, 0xdefc, 0x5aad, 0x5a8c, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x526b, 0x5a6c, 0xd67a, 0xe73c, 0x0000, 0x0000, 0xe73c, 0xd67a, 0x5a6c, 0x526b, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x524b, 0xbdb8, 0xef7d, 0x0000, 0x0000, 0xef7d, 0xbdb8, 0x524b, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x41ea, 0x9c93, 0xe71b, 0x0000, 0x0000, 0xe71b, 0x9c93, 0x41ea, 0x0000, 0x0000, 0x0000, 0x0000,
-};
-// Total pixels: 256 (16x16)
-// Memory size: 512 bytes
-
-// enemy_tank_map - 28x28 pixels, RGB565 format
-const uint16_t enemy_tank_map[] PROGMEM = {
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xad75, 0xd6ba, 0xd69a, 0xd69a, 0xd6ba, 0xad55, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xad75, 0xdefb, 0xf79e, 0xf79e, 0xf79e, 0xf79e, 0xdedb, 0xad55, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xdedb, 0xb5b6, 0xb596, 0xe71c, 0xe73c, 0xef7d, 0xef7d, 0xef7d, 0xef7d, 0xe71c, 0xdefb, 0xb596, 0xbdd7, 0xd6ba, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xd69a, 0xdefb, 0xc618, 0xdefb, 0xdedb, 0xe71c, 0xef7d, 0xef7d, 0xef7d, 0xef7d, 0xe71c, 0xdedb, 0xdefb, 0xbdf7, 0xe71c, 0xce79, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xc618, 0xffdf, 0xc618, 0xdedb, 0xdefb, 0xdedb, 0xe73c, 0xef7d, 0xef7d, 0xef7d, 0xef7d, 0xe73c, 0xdedb, 0xdefb, 0xd69a, 0xc638, 0xf7be, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xdefb, 0xf7be, 0xce79, 0xd69a, 0xdefb, 0xdedb, 0xef5d, 0xef7d, 0xef7d, 0xef7d, 0xef7d, 0xe73c, 0xdedb, 0xdefb, 0xce79, 0xd6ba, 0xffdf, 0xd6ba, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0xce79, 0xf7be, 0xf7be, 0xbdf7, 0xc638, 0xdefb, 0xdedb, 0xef5d, 0xef7d, 0xef7d, 0xef7d, 0xef7d, 0xef5d, 0xdedb, 0xe71c, 0xbdf7, 0xc639, 0xf7be, 0xf7be, 0xc638, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0xf79e, 0xf7be, 0xd6bb, 0x6b0e, 0xbdf7, 0xe71c, 0xdedb, 0xef7d, 0xef7d, 0xef7d, 0xef7d, 0xef7d, 0xef5d, 0xdedb, 0xe71c, 0xb576, 0x732f, 0xe71c, 0xf7be, 0xef5d, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0xdedb, 0xf7be, 0xef7d, 0x83d1, 0x5a6c, 0xad76, 0xe71c, 0xdefb, 0xef7d, 0xef7d, 0xef7d, 0xef7d, 0xef7d, 0xef7d, 0xdedb, 0xdf1b, 0xa4f4, 0x524c, 0x9453, 0xf7be, 0xf7be, 0xd69a, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0xce59, 0xf7be, 0xffde, 0xa4f5, 0x5a8c, 0x5a8c, 0x9493, 0xdefb, 0xdefb, 0xef7d, 0xef7d, 0xe71c, 0xe71c, 0xef7d, 0xef7d, 0xdefb, 0xdefb, 0x8411, 0x5a8c, 0x5a8c, 0xb597, 0xffde, 0xf7be, 0xc638, 0x0000, 0x0000,
-  0x0000, 0x0000, 0xef7d, 0xf7de, 0xce59, 0x5aad, 0x62cd, 0x524b, 0x83f0, 0xdedb, 0xe71c, 0xe73c, 0xb597, 0x732f, 0x7bb0, 0xc5f8, 0xe73c, 0xe71c, 0xd69a, 0x736f, 0x526c, 0x62cd, 0x62ee, 0xdedb, 0xf7be, 0xe73c, 0x0000, 0x0000,
-  0x0000, 0xd6ba, 0xffdf, 0xe73c, 0x734f, 0x5aad, 0x5aad, 0x526c, 0x6b2e, 0xd6ba, 0xce59, 0x734f, 0x41aa, 0x41aa, 0x49eb, 0x522c, 0x83d1, 0xd6ba, 0xce58, 0x62ed, 0x526c, 0x5aad, 0x5a8c, 0x83d1, 0xef7d, 0xf7be, 0xce79, 0x0000,
-  0xce59, 0xf79e, 0xf7be, 0x9473, 0x5a6c, 0x62ad, 0x5a8c, 0x5a6c, 0x5aad, 0xc638, 0xc5f8, 0x4189, 0x49ea, 0x4a0b, 0x524c, 0x522c, 0x522c, 0xd67a, 0xb5b6, 0x5a8c, 0x5a8c, 0x5a8c, 0x62cd, 0x5a6c, 0xa515, 0xffdf, 0xef7d, 0xc638,
-  0xd69a, 0xffdf, 0xbdb7, 0x5a8c, 0x62cd, 0x5a8c, 0x5a8c, 0x5a8c, 0x526c, 0xad75, 0xdedb, 0x5a6c, 0x41ca, 0x49ea, 0x524c, 0x4a0b, 0x6b2f, 0xe71c, 0x9cd3, 0x526b, 0x5a8c, 0x5a8c, 0x5a8c, 0x62cd, 0x62ad, 0xce39, 0xffdf, 0xce79,
-  0xce79, 0xf79e, 0x732f, 0x5aad, 0x62cd, 0x5a8c, 0x5a8c, 0x5a8c, 0x524b, 0x9493, 0xe73c, 0x6b2e, 0x4189, 0x49eb, 0x524c, 0x49eb, 0x83f1, 0xe73c, 0x8411, 0x524b, 0x5a8c, 0x5a8c, 0x5aad, 0x62ed, 0x5a8c, 0x83d1, 0xffdf, 0xce59,
-  0xc638, 0xf7be, 0x83f1, 0x5a8c, 0x62cd, 0x5aad, 0x5a8c, 0x5a8c, 0x524b, 0x7bd0, 0xe73c, 0x8c32, 0x3989, 0x4a0b, 0x524c, 0x49eb, 0xa4f5, 0xdefb, 0x736f, 0x526c, 0x5a8c, 0x5a8c, 0x62ad, 0x62cd, 0x5a6c, 0x9493, 0xf79e, 0x0000,
-  0x0000, 0xef7d, 0xad35, 0x5a6c, 0x62ee, 0x62ad, 0x5a8c, 0x5a8c, 0x526c, 0x6b2e, 0xdeda, 0xad35, 0x4189, 0x4a0b, 0x524c, 0x520c, 0xbdd8, 0xce79, 0x62cd, 0x526c, 0x5a8c, 0x5a8c, 0x62cd, 0x62cd, 0x5a6c, 0xbdd8, 0xe73c, 0x0000,
-  0x0000, 0xdf1b, 0xd67a, 0x5a8c, 0x62cd, 0x62cd, 0x62ad, 0x62ad, 0x5aad, 0x62ed, 0xc638, 0xc619, 0x41a9, 0x49eb, 0x522c, 0x524c, 0xd6ba, 0xb5b6, 0x5aad, 0x62ad, 0x62ad, 0x62ad, 0x62cd, 0x62cd, 0x62cd, 0xe71c, 0xdeda, 0x0000,
-  0x0000, 0xd69a, 0xef7e, 0x6b0e, 0x62ad, 0x62cd, 0x62cd, 0x62cd, 0x62cd, 0x62ad, 0xad75, 0xdefb, 0x7b70, 0x41aa, 0x49eb, 0x8c12, 0xe71c, 0x9cf4, 0x5aad, 0x62cd, 0x62cd, 0x62cd, 0x62cd, 0x5aad, 0x7b90, 0xffdf, 0xce59, 0x0000,
-  0x0000, 0x0000, 0xffff, 0x8411, 0x5a8c, 0x62cd, 0x62cd, 0x62cd, 0x62cd, 0x5a8d, 0x9cb3, 0xe71b, 0xdefb, 0x9cd4, 0xa515, 0xe71c, 0xdefb, 0x8c31, 0x5a8d, 0x62cd, 0x62cd, 0x62cd, 0x62cd, 0x5a6c, 0x9c93, 0xffff, 0x0000, 0x0000,
-  0x0000, 0x0000, 0xf7be, 0xad36, 0x5a6c, 0x62cd, 0x62cd, 0x62cd, 0x62cd, 0x62ad, 0x8411, 0xdedb, 0xdedb, 0xe73c, 0xe71c, 0xdefb, 0xd69a, 0x7bb0, 0x62ad, 0x62cd, 0x62cd, 0x62cd, 0x62cd, 0x5a6c, 0xbdd8, 0xe73c, 0x0000, 0x0000,
-  0x0000, 0x0000, 0xe71c, 0xd67a, 0x5a8c, 0x62cd, 0x62cd, 0x62ce, 0x62ce, 0x524b, 0x6b2e, 0xce79, 0xdefb, 0xdedb, 0xdedb, 0xdefb, 0xc638, 0x62ed, 0x526b, 0x62ee, 0x62ce, 0x62cd, 0x62cd, 0x62cd, 0xe71c, 0xdedb, 0x0000, 0x0000,
-  0x0000, 0x0000, 0xd69a, 0xf79e, 0x6b0e, 0x62ad, 0x62ad, 0x526b, 0x0000, 0x0000, 0x0000, 0xc618, 0xe71c, 0xdedb, 0xdedb, 0xe71c, 0xbdd7, 0x0000, 0x0000, 0x524b, 0x526b, 0x62cd, 0x5a8c, 0x7b90, 0xffdf, 0xce79, 0x0000, 0x0000,
-  0x0000, 0x0000, 0xc638, 0xffff, 0x8c12, 0x4a2a, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xb5b6, 0xef5d, 0xe71c, 0xdefb, 0xef5d, 0xb596, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x4a2b, 0x9cb4, 0xffff, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0xf7be, 0xad56, 0x4a0a, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xa534, 0xbdd7, 0xb596, 0xb596, 0xbdd7, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x524b, 0xc5f8, 0xef5c, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0xe71c, 0xd69a, 0x5a6c, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x62cd, 0xe71c, 0xdedb, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0xd6ba, 0xf7be, 0x734f, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x41e9, 0x83d1, 0xffff, 0xce79, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0xc638, 0xdedb, 0x6b2e, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x7bb0, 0xdefb, 0x0000, 0x0000, 0x0000, 0x0000,
-};
-// Total pixels: 784 (28x28)
-// Memory size: 1568 bytes
-
-// bullet_player_map - 4x8 pixels, RGB565 format
-const uint16_t bullet_player_map[] PROGMEM = {
-  0x35de, 0x6e9f, 0x6e9f, 0x35be,
-  0x4e3f, 0xffff, 0xffff, 0x4e1f,
-  0x4e1e, 0xffff, 0xffff, 0x4e1e,
-  0x4e1e, 0xffff, 0xffff, 0x4e1e,
-  0x4e1e, 0xffff, 0xffff, 0x4e1e,
-  0x4e1e, 0xffff, 0xffff, 0x4e1e,
-  0x4e3f, 0xffff, 0xffff, 0x4e3f,
-  0x35de, 0x769f, 0x769f, 0x35de,
-};
-// Total pixels: 32 (4x8)
-// Memory size: 64 bytes
-
-// bullet_enemy_map - 4x8 pixels, RGB565 format
-const uint16_t bullet_enemy_map[] PROGMEM = {
-  0xa986, 0xc36d, 0xc38e, 0xa986,
-  0xba69, 0xffdf, 0xffdf, 0xb269,
-  0xb28a, 0xffdf, 0xffdf, 0xb28a,
-  0xb28a, 0xffdf, 0xffdf, 0xb28a,
-  0xb28a, 0xffdf, 0xffdf, 0xb28a,
-  0xb28a, 0xffdf, 0xffdf, 0xb28a,
-  0xba69, 0xffff, 0xffff, 0xba69,
-  0xa986, 0xcbae, 0xc3ae, 0xa986,
-};
-// Total pixels: 32 (4x8)
-// Memory size: 64 bytes
-
-// powerup_health_map - 16x16 pixels, RGB565 format
-const uint16_t powerup_health_map[] PROGMEM = {
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xce59, 0xc638, 0xc638, 0xce79, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xce59, 0xdedb, 0xdedb, 0xdedb, 0xdedb, 0xdedb, 0xce59, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xce59, 0xd69a, 0xe73c, 0xf79e, 0xf79e, 0xf79e, 0xef5d, 0xd6ba, 0xce59, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xc639, 0xd69a, 0xe71c, 0xf79e, 0xf79e, 0xf79e, 0xf79e, 0xf7be, 0xe71c, 0xd69a, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0xd69a, 0xdefb, 0xf79e, 0xf79e, 0xf79e, 0xf79e, 0xf79e, 0xf7be, 0xef7d, 0xd69a, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x0000, 0x2c77, 0x9e5b, 0xffbe, 0xf79e, 0xf79e, 0xf79e, 0xf79e, 0xf79e, 0xf7be, 0xef5d, 0xd6ba, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x1c36, 0x1cda, 0x3dde, 0xb6fe, 0xffbe, 0xef9e, 0xf79e, 0xf79e, 0xf79e, 0xf79e, 0xe71c, 0xce59, 0x0000,
-  0x0000, 0x0000, 0x1436, 0x24fa, 0x3dde, 0x35de, 0x3dfe, 0xbf1e, 0xffbe, 0xef9e, 0xf79e, 0xf7be, 0xef5d, 0xdefb, 0xce59, 0x0000,
-  0x0000, 0x1436, 0x251a, 0x35fe, 0x35fe, 0x3dde, 0x35de, 0x4e1e, 0xd75e, 0xffbe, 0xf79e, 0xef5d, 0xd6ba, 0xce79, 0x0000, 0x0000,
-  0x1415, 0x24b9, 0x35de, 0x35fe, 0x35de, 0x35de, 0x3dde, 0x2dde, 0x561e, 0xdf7e, 0xf77d, 0xd6ba, 0xce59, 0x0000, 0x0000, 0x0000,
-  0x1415, 0x2d1a, 0x3e1f, 0x35de, 0x35de, 0x35de, 0x35de, 0x3dde, 0x2dde, 0x55fd, 0xc67a, 0xd69a, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x1416, 0x2d1a, 0x3dff, 0x35de, 0x35de, 0x35de, 0x35de, 0x35fe, 0x35bd, 0x1478, 0x44b7, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x13f5, 0x24d9, 0x35fe, 0x35de, 0x35de, 0x35de, 0x35ff, 0x35be, 0x1c98, 0x1c16, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x1c78, 0x2d3b, 0x35fe, 0x3e1f, 0x3e1f, 0x35bd, 0x1c98, 0x1436, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x1415, 0x1c57, 0x24b9, 0x24fa, 0x24fa, 0x1c78, 0x1416, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-  0x0000, 0x0000, 0x0000, 0x1415, 0x1415, 0x13f5, 0x1416, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000, 0x0000,
-};
-// Total pixels: 256 (16x16)
-// Memory size: 512 bytes
-
-// powerup_weapon_map - 16x16 pixels, RGB565 format
-const uint16_t powerup_weapon_map[] PROGMEM = {
-  0x0000, 0x0000, 0x1436, 0x1c36, 0x1c57, 0x1c57, 0x1c57, 0x1c57, 0x1c57, 0x1c57, 0x1c57, 0x1c36, 0x1436, 0x13f5, 0x0000, 0x0000,
-  0x0000, 0x1c77, 0x2d7c, 0x35bd, 0x35de, 0x35de, 0x35de, 0x35de, 0x35de, 0x35de, 0x35de, 0x35bd, 0x359d, 0x253b, 0x1416, 0x0000,
-  0x1416, 0x2d9d, 0x3e1f, 0x35de, 0x35fe, 0x35fe, 0x3dfe, 0x3dfe, 0x3dfe, 0x3dfe, 0x35fe, 0x35fe, 0x35fe, 0x3e1f, 0x24d9, 0x0000,
-  0x1c57, 0x35de, 0x35de, 0x35de, 0x35de, 0x35de, 0x2dde, 0x2dde, 0x2dde, 0x2dde, 0x35de, 0x35de, 0x35de, 0x3e1f, 0x2d5c, 0x13d5,
-  0x1c57, 0x35de, 0x35fe, 0x35de, 0x35de, 0x3dfe, 0x563e, 0x563e, 0x563e, 0x563e, 0x35de, 0x35de, 0x35de, 0x3e1f, 0x2d7c, 0x13f5,
-  0x1c57, 0x35de, 0x35fe, 0x35de, 0x35de, 0x4e1e, 0xf7ff, 0xffff, 0xffff, 0xaf1f, 0x2dbe, 0x3dfe, 0x35de, 0x3e1f, 0x2d7c, 0x13f5,
-  0x1c57, 0x35de, 0x35fe, 0x3dde, 0x2dde, 0x5e3e, 0xffff, 0xffff, 0xf7df, 0x563e, 0x2dde, 0x3dde, 0x35de, 0x3e1f, 0x2d7c, 0x13f5,
-  0x1c57, 0x35de, 0x35fe, 0x3dfe, 0x2dbe, 0x667e, 0xffff, 0xffff, 0xaf3f, 0x25be, 0x3dfe, 0x35de, 0x35de, 0x3e1f, 0x2d7c, 0x13f5,
-  0x1c57, 0x35de, 0x35fe, 0x3dfe, 0x2dbe, 0x769f, 0xffff, 0xffff, 0xefdf, 0x86bf, 0x2dde, 0x3dfe, 0x35de, 0x3e1f, 0x2d7c, 0x13f5,
-  0x1c57, 0x35de, 0x35fe, 0x35de, 0x35de, 0x45fe, 0x8edf, 0xefbf, 0xffff, 0x5e5e, 0x2dde, 0x3dfe, 0x35de, 0x3e1f, 0x2d7c, 0x13f5,
-  0x1c57, 0x35de, 0x35fe, 0x35de, 0x35de, 0x35de, 0x25be, 0xcf7f, 0x8edf, 0x25be, 0x3dfe, 0x35de, 0x35de, 0x3e1f, 0x2d7c, 0x13f5,
-  0x1c57, 0x35de, 0x35fe, 0x35de, 0x35de, 0x35de, 0x4e1e, 0xa6ff, 0x35de, 0x35fe, 0x35de, 0x35de, 0x35de, 0x3e1f, 0x2d7c, 0x13f5,
-  0x1c57, 0x35de, 0x35de, 0x35de, 0x35de, 0x35de, 0x461e, 0x45fe, 0x35de, 0x35de, 0x35de, 0x35de, 0x35de, 0x3dff, 0x2d5c, 0x13f5,
-  0x1416, 0x2d7c, 0x3e1f, 0x35de, 0x35fe, 0x35fe, 0x35de, 0x35de, 0x35fe, 0x35fe, 0x35fe, 0x35fe, 0x35fe, 0x35ff, 0x24b9, 0x0000,
-  0x0000, 0x1c77, 0x2d9d, 0x35de, 0x35de, 0x35de, 0x35de, 0x35de, 0x35de, 0x35de, 0x35de, 0x35de, 0x35be, 0x253b, 0x1415, 0x0000,
-  0x0000, 0x0000, 0x1437, 0x1c57, 0x1c57, 0x1c57, 0x1c57, 0x1c57, 0x1c57, 0x1c57, 0x1c57, 0x1c57, 0x1c37, 0x1416, 0x0000, 0x0000,
-};
-// Total pixels: 256 (16x16)
-// Memory size: 512 bytes
-
 // ============================================================================
 // LOVYANGFX SETUP - Configure for your ILI9488
 // ============================================================================
 
-class LGFX : public lgfx::LGFX_Device {
+class LGFX : public lgfx::LGFX_Device
+{
   lgfx::Panel_ILI9488 _panel_instance;
   lgfx::Bus_SPI _bus_instance;
   lgfx::Light_PWM _light_instance;
-  lgfx::Touch_FT5x06 _touch_instance;  // FT6206 uses FT5x06 driver
+  lgfx::Touch_FT5x06 _touch_instance; // FT6206 uses FT5x06 driver
 
 public:
-  LGFX(void) {
+  LGFX(void)
+  {
     {
       auto cfg = _bus_instance.config();
       cfg.spi_host = SPI3_HOST;
@@ -230,7 +49,7 @@ public:
       cfg.spi_3wire = true;
       cfg.use_lock = true;
       cfg.dma_channel = SPI_DMA_CH_AUTO;
-      cfg.pin_sclk = 12;  // Adjust for your board
+      cfg.pin_sclk = 12; // Adjust for your board
       cfg.pin_mosi = 13;
       cfg.pin_miso = 14;
       cfg.pin_dc = 42;
@@ -289,25 +108,29 @@ LGFX_Sprite canvas(&display);
 // UTILITY STRUCTURES
 // ============================================================================
 
-struct Vec2 {
+struct Vec2
+{
   float x, y;
   Vec2(float x = 0, float y = 0) : x(x), y(y) {}
-  
-  Vec2 operator+(const Vec2& v) const { return Vec2(x + v.x, y + v.y); }
-  Vec2 operator-(const Vec2& v) const { return Vec2(x - v.x, y - v.y); }
+
+  Vec2 operator+(const Vec2 &v) const { return Vec2(x + v.x, y + v.y); }
+  Vec2 operator-(const Vec2 &v) const { return Vec2(x - v.x, y - v.y); }
   Vec2 operator*(float s) const { return Vec2(x * s, y * s); }
   float length() const { return sqrt(x * x + y * y); }
-  Vec2 normalize() const {
+  Vec2 normalize() const
+  {
     float len = length();
     return len > 0 ? Vec2(x / len, y / len) : Vec2(0, 0);
   }
 };
 
-struct Rect {
+struct Rect
+{
   float x, y, w, h;
   Rect(float x = 0, float y = 0, float w = 0, float h = 0) : x(x), y(y), w(w), h(h) {}
-  
-  bool intersects(const Rect& r) const {
+
+  bool intersects(const Rect &r) const
+  {
     return x < r.x + r.w && x + w > r.x && y < r.y + r.h && y + h > r.y;
   }
 };
@@ -316,19 +139,22 @@ struct Rect {
 // SOUND SYSTEM
 // ============================================================================
 
-class SoundSystem {
+class SoundSystem
+{
 private:
-  struct Sound {
+  struct Sound
+  {
     int freq;
     int duration;
   };
-  
+
   Sound currentSound;
   unsigned long soundStartTime;
   bool isPlaying;
 
 public:
-  enum SoundEffect {
+  enum SoundEffect
+  {
     SHOOT,
     EXPLOSION,
     HIT,
@@ -336,44 +162,50 @@ public:
     ENEMY_SHOOT
   };
 
-  void init() {
+  void init()
+  {
     ledcSetup(0, 2000, 8);
     ledcAttachPin(45, 0);
     isPlaying = false;
   }
 
-  void play(SoundEffect effect) {
+  void play(SoundEffect effect)
+  {
     // // SFW ;-)
     // return;
 
-    switch(effect) {
-      case SHOOT:
-        playTone(1500, 50);
-        break;
-      case EXPLOSION:
-        playTone(300, 200);
-        break;
-      case HIT:
-        playTone(200, 100);
-        break;
-      case POWERUP:
-        playTone(2000, 150);
-        break;
-      case ENEMY_SHOOT:
-        playTone(800, 40);
-        break;
+    switch (effect)
+    {
+    case SHOOT:
+      playTone(1500, 50);
+      break;
+    case EXPLOSION:
+      playTone(300, 200);
+      break;
+    case HIT:
+      playTone(200, 100);
+      break;
+    case POWERUP:
+      playTone(2000, 150);
+      break;
+    case ENEMY_SHOOT:
+      playTone(800, 40);
+      break;
     }
   }
 
-  void update() {
-    if (isPlaying && millis() - soundStartTime > currentSound.duration) {
+  void update()
+  {
+    if (isPlaying && millis() - soundStartTime > currentSound.duration)
+    {
       ledcWriteTone(0, 0);
       isPlaying = false;
     }
   }
 
 private:
-  void playTone(int freq, int duration) {
+  void playTone(int freq, int duration)
+  {
     currentSound = {freq, duration};
     soundStartTime = millis();
     isPlaying = true;
@@ -387,49 +219,60 @@ SoundSystem sound;
 // INPUT SYSTEM
 // ============================================================================
 
-class InputSystem {
+class InputSystem
+{
 private:
   Vec2 joystickPos;
   bool firePressed;
   Vec2 touchPos;
   bool isTouching;
-  
+
   const int JOYSTICK_RADIUS = 60;
   const int JOYSTICK_CENTER_X = 70;
   const int JOYSTICK_CENTER_Y = SCREEN_HEIGHT - 70;
 
 public:
-  void update() {
+  void update()
+  {
     isTouching = false;
     uint16_t tx, ty;
-    
-    if (display.getTouch(&tx, &ty)) {
+
+    if (display.getTouch(&tx, &ty))
+    {
       isTouching = true;
       touchPos = Vec2(tx, ty);
-      
+
       // Virtual joystick (left side)
-      if (tx < SCREEN_WIDTH / 2) {
+      if (tx < SCREEN_WIDTH / 2)
+      {
         float dx = tx - JOYSTICK_CENTER_X;
         float dy = ty - JOYSTICK_CENTER_Y;
         float dist = sqrt(dx * dx + dy * dy);
-        
-        if (dist > TOUCH_THRESHOLD) {
+
+        if (dist > TOUCH_THRESHOLD)
+        {
           float maxDist = JOYSTICK_RADIUS;
-          if (dist > maxDist) {
+          if (dist > maxDist)
+          {
             dx = (dx / dist) * maxDist;
             dy = (dy / dist) * maxDist;
           }
           joystickPos = Vec2(dx / maxDist, dy / maxDist);
-        } else {
+        }
+        else
+        {
           joystickPos = Vec2(0, 0);
         }
       }
-      
+
       // Fire button (right side)
-      if (tx > SCREEN_WIDTH / 2) {
+      if (tx > SCREEN_WIDTH / 2)
+      {
         firePressed = true;
       }
-    } else {
+    }
+    else
+    {
       joystickPos = Vec2(0, 0);
       firePressed = false;
     }
@@ -439,20 +282,21 @@ public:
   bool isFirePressed() const { return firePressed; }
   bool getTouching() const { return isTouching; }
 
-  void drawUI() {
+  void drawUI()
+  {
     // Draw joystick base
     canvas.drawCircle(JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y, JOYSTICK_RADIUS, TFT_DARKGREY);
-    canvas.fillCircle(JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y, JOYSTICK_RADIUS - 2, 
-                     canvas.color565(40, 40, 40));
-    
+    canvas.fillCircle(JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y, JOYSTICK_RADIUS - 2,
+                      canvas.color565(40, 40, 40));
+
     // Draw joystick stick
     int stickX = JOYSTICK_CENTER_X + joystickPos.x * (JOYSTICK_RADIUS - 20);
     int stickY = JOYSTICK_CENTER_Y + joystickPos.y * (JOYSTICK_RADIUS - 20);
     canvas.fillCircle(stickX, stickY, 20, TFT_WHITE);
-    
+
     // Draw fire button
-    canvas.fillCircle(SCREEN_WIDTH - 60, SCREEN_HEIGHT - 60, 40, 
-                     firePressed ? TFT_RED : TFT_DARKGREY);
+    canvas.fillCircle(SCREEN_WIDTH - 60, SCREEN_HEIGHT - 60, 40,
+                      firePressed ? TFT_RED : TFT_DARKGREY);
     canvas.setTextColor(TFT_WHITE);
     canvas.setTextDatum(MC_DATUM);
     canvas.drawString("FIRE", SCREEN_WIDTH - 60, SCREEN_HEIGHT - 60);
@@ -465,7 +309,8 @@ InputSystem input;
 // ENTITY SYSTEM
 // ============================================================================
 
-enum EntityType {
+enum EntityType
+{
   PLAYER,
   ENEMY_BASIC,
   ENEMY_FAST,
@@ -476,9 +321,10 @@ enum EntityType {
   POWERUP_HEALTH,
   EXPLOSION,
   PARTICLE
-  };
+};
 
-struct Entity {
+struct Entity
+{
   bool active;
   EntityType type;
   Vec2 pos;
@@ -488,8 +334,9 @@ struct Entity {
   uint32_t color;
   int animFrame;
   unsigned long lastAnimTime;
-  
-  void init(EntityType t, Vec2 p, Vec2 v, float w, float h, int hp, uint32_t col) {
+
+  void init(EntityType t, Vec2 p, Vec2 v, float w, float h, int hp, uint32_t col)
+  {
     active = true;
     type = t;
     pos = p;
@@ -501,12 +348,14 @@ struct Entity {
     animFrame = 0;
     lastAnimTime = millis();
   }
-  
-  Rect getRect() const {
-    return Rect(pos.x - width/2, pos.y - height/2, width, height);
+
+  Rect getRect() const
+  {
+    return Rect(pos.x - width / 2, pos.y - height / 2, width, height);
   }
-  
-  void deactivate() {
+
+  void deactivate()
+  {
     active = false;
   }
 };
@@ -515,7 +364,8 @@ struct Entity {
 // GAME STATE & ENTITIES
 // ============================================================================
 
-class Game {
+class Game
+{
 public:
   Entity player;
   Entity enemies[MAX_ENEMIES];
@@ -524,7 +374,7 @@ public:
   Entity powerups[MAX_POWERUPS];
   Entity explosions[MAX_EXPLOSIONS];
   Entity particles[MAX_PARTICLES];
-  
+
   int score;
   int lives;
   int wave;
@@ -532,16 +382,18 @@ public:
   unsigned long lastEnemySpawn;
   unsigned long lastPlayerShot;
   int playerWeaponLevel;
-  
-  enum GameState {
+
+  enum GameState
+  {
     TITLE,
     PLAYING,
     GAME_OVER
   };
-  
+
   GameState state;
 
-  void init() {
+  void init()
+  {
     state = TITLE;
     score = 0;
     lives = 3;
@@ -550,100 +402,127 @@ public:
     playerWeaponLevel = 1;
     lastEnemySpawn = 0;
     lastPlayerShot = 0;
-    
+
     // Initialize player
-    player.init(PLAYER, Vec2(SCREEN_WIDTH/2, SCREEN_HEIGHT - 60), 
+    player.init(PLAYER, Vec2(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 60),
                 Vec2(0, 0), 24, 24, 100, TFT_CYAN);
-    
+
     // Deactivate all entities
-    for (int i = 0; i < MAX_ENEMIES; i++) enemies[i].active = false;
-    for (int i = 0; i < MAX_PLAYER_BULLETS; i++) playerBullets[i].active = false;
-    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) enemyBullets[i].active = false;
-    for (int i = 0; i < MAX_POWERUPS; i++) powerups[i].active = false;
-    for (int i = 0; i < MAX_EXPLOSIONS; i++) explosions[i].active = false;
-    for (int i = 0; i < MAX_PARTICLES; i++) particles[i].active = false;
+    for (int i = 0; i < MAX_ENEMIES; i++)
+      enemies[i].active = false;
+    for (int i = 0; i < MAX_PLAYER_BULLETS; i++)
+      playerBullets[i].active = false;
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++)
+      enemyBullets[i].active = false;
+    for (int i = 0; i < MAX_POWERUPS; i++)
+      powerups[i].active = false;
+    for (int i = 0; i < MAX_EXPLOSIONS; i++)
+      explosions[i].active = false;
+    for (int i = 0; i < MAX_PARTICLES; i++)
+      particles[i].active = false;
   }
 
-  void startGame() {
+  void startGame()
+  {
     init();
     state = PLAYING;
   }
 
   // Entity spawning
-  void spawnEnemy(EntityType type, Vec2 pos, Vec2 vel) {
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-      if (!enemies[i].active) {
+  void spawnEnemy(EntityType type, Vec2 pos, Vec2 vel)
+  {
+    for (int i = 0; i < MAX_ENEMIES; i++)
+    {
+      if (!enemies[i].active)
+      {
         int hp = 10;
         uint32_t col = TFT_RED;
         float w = 20, h = 20;
-        
-        switch(type) {
-          case ENEMY_FAST:
-            hp = 5;
-            col = TFT_YELLOW;
-            w = h = 16;
-            break;
-          case ENEMY_TANK:
-            hp = 30;
-            col = TFT_PURPLE;
-            w = h = 28;
-            break;
-          default:
-            break;
+
+        switch (type)
+        {
+        case ENEMY_FAST:
+          hp = 5;
+          col = TFT_YELLOW;
+          w = h = 16;
+          break;
+        case ENEMY_TANK:
+          hp = 30;
+          col = TFT_PURPLE;
+          w = h = 28;
+          break;
+        default:
+          break;
         }
-        
+
         enemies[i].init(type, pos, vel, w, h, hp, col);
         break;
       }
     }
   }
 
-  void spawnPlayerBullet(Vec2 pos, Vec2 vel) {
-    for (int i = 0; i < MAX_PLAYER_BULLETS; i++) {
-      if (!playerBullets[i].active) {
+  void spawnPlayerBullet(Vec2 pos, Vec2 vel)
+  {
+    for (int i = 0; i < MAX_PLAYER_BULLETS; i++)
+    {
+      if (!playerBullets[i].active)
+      {
         playerBullets[i].init(BULLET_PLAYER, pos, vel, 4, 8, 1, TFT_WHITE);
         break;
       }
     }
   }
 
-  void spawnEnemyBullet(Vec2 pos, Vec2 vel) {
-    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
-      if (!enemyBullets[i].active) {
+  void spawnEnemyBullet(Vec2 pos, Vec2 vel)
+  {
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++)
+    {
+      if (!enemyBullets[i].active)
+      {
         enemyBullets[i].init(BULLET_ENEMY, pos, vel, 4, 8, 1, TFT_ORANGE);
         break;
       }
     }
   }
 
-  void spawnExplosion(Vec2 pos, float size) {
-    for (int i = 0; i < MAX_EXPLOSIONS; i++) {
-      if (!explosions[i].active) {
+  void spawnExplosion(Vec2 pos, float size)
+  {
+    for (int i = 0; i < MAX_EXPLOSIONS; i++)
+    {
+      if (!explosions[i].active)
+      {
         explosions[i].init(EXPLOSION, pos, Vec2(0, 0), size, size, 6, TFT_ORANGE);
         break;
       }
     }
-    
+
     // Spawn particles
-    for (int j = 0; j < 8; j++) {
+    for (int j = 0; j < 8; j++)
+    {
       float angle = (j / 8.0) * 2 * PI;
       Vec2 vel(cos(angle) * 2, sin(angle) * 2);
       spawnParticle(pos, vel);
     }
   }
 
-  void spawnParticle(Vec2 pos, Vec2 vel) {
-    for (int i = 0; i < MAX_PARTICLES; i++) {
-      if (!particles[i].active) {
+  void spawnParticle(Vec2 pos, Vec2 vel)
+  {
+    for (int i = 0; i < MAX_PARTICLES; i++)
+    {
+      if (!particles[i].active)
+      {
         particles[i].init(PARTICLE, pos, vel, 2, 2, 10, TFT_YELLOW);
         break;
       }
     }
   }
 
-  void spawnPowerup(Vec2 pos, EntityType type) {
-    for (int i = 0; i < MAX_POWERUPS; i++) {
-      if (!powerups[i].active) {
+  void spawnPowerup(Vec2 pos, EntityType type)
+  {
+    for (int i = 0; i < MAX_POWERUPS; i++)
+    {
+      if (!powerups[i].active)
+      {
         uint32_t col = type == POWERUP_WEAPON ? TFT_GREEN : TFT_MAGENTA;
         powerups[i].init(type, pos, Vec2(0, 1), 16, 16, 1, col);
         break;
@@ -652,16 +531,21 @@ public:
   }
 
   // Update functions
-  void update() {
-    if (state == TITLE) {
-      if (input.getTouching()) {
+  void update()
+  {
+    if (state == TITLE)
+    {
+      if (input.getTouching())
+      {
         startGame();
       }
       return;
     }
-    
-    if (state == GAME_OVER) {
-      if (input.getTouching()) {
+
+    if (state == GAME_OVER)
+    {
+      if (input.getTouching())
+      {
         startGame();
       }
       return;
@@ -669,25 +553,30 @@ public:
 
     // Update scroll
     scrollY += 1.0;
-    if (scrollY > 32) scrollY = 0;
+    if (scrollY > 32)
+      scrollY = 0;
 
     // Update player
     updatePlayer();
 
     // Spawn enemies
-    if (millis() - lastEnemySpawn > 2000) {
+    if (millis() - lastEnemySpawn > 2000)
+    {
       int enemyType = random(0, 100);
       EntityType type = ENEMY_BASIC;
       float speed = 1.5;
-      
-      if (enemyType > 70) {
+
+      if (enemyType > 70)
+      {
         type = ENEMY_FAST;
         speed = 3.0;
-      } else if (enemyType > 90) {
+      }
+      else if (enemyType > 90)
+      {
         type = ENEMY_TANK;
         speed = 0.8;
       }
-      
+
       float x = random(30, SCREEN_WIDTH - 30);
       spawnEnemy(type, Vec2(x, -20), Vec2(0, speed));
       lastEnemySpawn = millis();
@@ -712,132 +601,181 @@ public:
     checkCollisions();
 
     // Check game over
-    if (lives <= 0) {
+    if (lives <= 0)
+    {
       state = GAME_OVER;
     }
   }
 
-  void updatePlayer() {
+  void updatePlayer()
+  {
     Vec2 movement = input.getMovement();
     player.vel = movement * 5.0;
     player.pos = player.pos + player.vel;
 
     // Clamp to screen
-    player.pos.x = constrain(player.pos.x, player.width/2, SCREEN_WIDTH - player.width/2);
-    player.pos.y = constrain(player.pos.y, player.height/2, SCREEN_HEIGHT - player.height/2 - 100);
+    player.pos.x = constrain(player.pos.x, player.width / 2, SCREEN_WIDTH - player.width / 2);
+    player.pos.y = constrain(player.pos.y, player.height / 2, SCREEN_HEIGHT - player.height / 2 - 20);
 
     // Shooting
-    if (input.isFirePressed() && millis() - lastPlayerShot > 150) {
+    if (input.isFirePressed() && millis() - lastPlayerShot > 150)
+    {
       sound.play(SoundSystem::SHOOT);
-      
-      if (playerWeaponLevel == 1) {
+
+      if (playerWeaponLevel == 1)
+      {
         spawnPlayerBullet(player.pos, Vec2(0, -8));
-      } else if (playerWeaponLevel == 2) {
+      }
+      else if (playerWeaponLevel == 2)
+      {
         spawnPlayerBullet(player.pos + Vec2(-8, 0), Vec2(0, -8));
         spawnPlayerBullet(player.pos + Vec2(8, 0), Vec2(0, -8));
-      } else {
+      }
+      else
+      {
         spawnPlayerBullet(player.pos, Vec2(0, -8));
         spawnPlayerBullet(player.pos + Vec2(-8, 0), Vec2(-1, -8));
         spawnPlayerBullet(player.pos + Vec2(8, 0), Vec2(1, -8));
       }
-      
+
       lastPlayerShot = millis();
     }
   }
 
-  void updateEnemies() {
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-      if (!enemies[i].active) continue;
-      
-      enemies[i].pos = enemies[i].pos + enemies[i].vel;
+  void updateEnemies()
+  {
+    for (int i = 0; i < MAX_ENEMIES; i++)
+    {
+      if (!enemies[i].active)
+        continue;
+
+      // enemies[i].pos = enemies[i].pos + enemies[i].vel;
+
+      Vec2 dir = (player.pos - enemies[i].pos).normalize();        
+      enemies[i].pos.x = enemies[i].pos.x + dir.x * enemies[i].vel.y * 1.5;
+      enemies[i].pos.y = enemies[i].pos.y + enemies[i].vel.y;
 
       // Remove if off screen
-      if (enemies[i].pos.y > SCREEN_HEIGHT + 20) {
+      if (enemies[i].pos.y > SCREEN_HEIGHT + 20)
+      {
         enemies[i].deactivate();
         continue;
       }
 
       // Enemy shooting
-      if (random(0, 100) < 2) {
-        Vec2 dir = (player.pos - enemies[i].pos).normalize();
-        spawnEnemyBullet(enemies[i].pos, dir * 3.0);
+      if (random(0, 100) < 2)
+      {
+        // Vec2 dir = (player.pos - enemies[i].pos).normalize();
+        // spawnEnemyBullet(enemies[i].pos, dir * 3.0);
+
+        spawnEnemyBullet(enemies[i].pos, Vec2(0, 3));
         sound.play(SoundSystem::ENEMY_SHOOT);
       }
     }
   }
 
-  void updateBullets() {
+  void updateBullets()
+  {
     // Player bullets
-    for (int i = 0; i < MAX_PLAYER_BULLETS; i++) {
-      if (!playerBullets[i].active) continue;
+    for (int i = 0; i < MAX_PLAYER_BULLETS; i++)
+    {
+      if (!playerBullets[i].active)
+        continue;
       playerBullets[i].pos = playerBullets[i].pos + playerBullets[i].vel;
-      if (playerBullets[i].pos.y < -10) playerBullets[i].deactivate();
+      if (playerBullets[i].pos.y < -10)
+        playerBullets[i].deactivate();
     }
 
     // Enemy bullets
-    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
-      if (!enemyBullets[i].active) continue;
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++)
+    {
+      if (!enemyBullets[i].active)
+        continue;
       enemyBullets[i].pos = enemyBullets[i].pos + enemyBullets[i].vel;
-      if (enemyBullets[i].pos.y > SCREEN_HEIGHT + 10) enemyBullets[i].deactivate();
+      if (enemyBullets[i].pos.y > SCREEN_HEIGHT + 10)
+        enemyBullets[i].deactivate();
     }
   }
 
-  void updatePowerups() {
-    for (int i = 0; i < MAX_POWERUPS; i++) {
-      if (!powerups[i].active) continue;
+  void updatePowerups()
+  {
+    for (int i = 0; i < MAX_POWERUPS; i++)
+    {
+      if (!powerups[i].active)
+        continue;
       powerups[i].pos = powerups[i].pos + powerups[i].vel;
-      if (powerups[i].pos.y > SCREEN_HEIGHT + 20) powerups[i].deactivate();
+      if (powerups[i].pos.y > SCREEN_HEIGHT + 20)
+        powerups[i].deactivate();
     }
   }
 
-  void updateExplosions() {
-    for (int i = 0; i < MAX_EXPLOSIONS; i++) {
-      if (!explosions[i].active) continue;
-      
-      if (millis() - explosions[i].lastAnimTime > 50) {
+  void updateExplosions()
+  {
+    for (int i = 0; i < MAX_EXPLOSIONS; i++)
+    {
+      if (!explosions[i].active)
+        continue;
+
+      if (millis() - explosions[i].lastAnimTime > 50)
+      {
         explosions[i].animFrame++;
         explosions[i].lastAnimTime = millis();
-        if (explosions[i].animFrame >= explosions[i].health) {
+        if (explosions[i].animFrame >= explosions[i].health)
+        {
           explosions[i].deactivate();
         }
       }
     }
   }
 
-  void updateParticles() {
-    for (int i = 0; i < MAX_PARTICLES; i++) {
-      if (!particles[i].active) continue;
+  void updateParticles()
+  {
+    for (int i = 0; i < MAX_PARTICLES; i++)
+    {
+      if (!particles[i].active)
+        continue;
       particles[i].pos = particles[i].pos + particles[i].vel;
       particles[i].health--;
-      if (particles[i].health <= 0) particles[i].deactivate();
+      if (particles[i].health <= 0)
+        particles[i].deactivate();
     }
   }
 
-  void checkCollisions() {
+  void checkCollisions()
+  {
     // Player bullets vs enemies
-    for (int i = 0; i < MAX_PLAYER_BULLETS; i++) {
-      if (!playerBullets[i].active) continue;
-      
-      for (int j = 0; j < MAX_ENEMIES; j++) {
-        if (!enemies[j].active) continue;
-        
-        if (playerBullets[i].getRect().intersects(enemies[j].getRect())) {
+    for (int i = 0; i < MAX_PLAYER_BULLETS; i++)
+    {
+      if (!playerBullets[i].active)
+        continue;
+
+      for (int j = 0; j < MAX_ENEMIES; j++)
+      {
+        if (!enemies[j].active)
+          continue;
+
+        if (playerBullets[i].getRect().intersects(enemies[j].getRect()))
+        {
           playerBullets[i].deactivate();
           enemies[j].health -= 10;
-          
-          if (enemies[j].health <= 0) {
+
+          if (enemies[j].health <= 0)
+          {
             score += 100;
             spawnExplosion(enemies[j].pos, enemies[j].width);
             sound.play(SoundSystem::EXPLOSION);
-            
+
             // Chance to drop powerup
-            if (random(0, 100) < 20) {
+            if (random(0, 100) < 20)
+            {
               EntityType pType = random(0, 2) == 0 ? POWERUP_WEAPON : POWERUP_HEALTH;
               spawnPowerup(enemies[j].pos, pType);
             }
-            
+
             enemies[j].deactivate();
-          } else {
+          }
+          else
+          {
             sound.play(SoundSystem::HIT);
           }
           break;
@@ -846,10 +784,13 @@ public:
     }
 
     // Enemy bullets vs player
-    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
-      if (!enemyBullets[i].active) continue;
-      
-      if (enemyBullets[i].getRect().intersects(player.getRect())) {
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++)
+    {
+      if (!enemyBullets[i].active)
+        continue;
+
+      if (enemyBullets[i].getRect().intersects(player.getRect()))
+      {
         enemyBullets[i].deactivate();
         lives--;
         spawnExplosion(player.pos, player.width);
@@ -858,10 +799,13 @@ public:
     }
 
     // Enemies vs player
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-      if (!enemies[i].active) continue;
-      
-      if (enemies[i].getRect().intersects(player.getRect())) {
+    for (int i = 0; i < MAX_ENEMIES; i++)
+    {
+      if (!enemies[i].active)
+        continue;
+
+      if (enemies[i].getRect().intersects(player.getRect()))
+      {
         lives--;
         spawnExplosion(enemies[i].pos, enemies[i].width);
         spawnExplosion(player.pos, player.width);
@@ -871,13 +815,19 @@ public:
     }
 
     // Powerups vs player
-    for (int i = 0; i < MAX_POWERUPS; i++) {
-      if (!powerups[i].active) continue;
-      
-      if (powerups[i].getRect().intersects(player.getRect())) {
-        if (powerups[i].type == POWERUP_WEAPON) {
+    for (int i = 0; i < MAX_POWERUPS; i++)
+    {
+      if (!powerups[i].active)
+        continue;
+
+      if (powerups[i].getRect().intersects(player.getRect()))
+      {
+        if (powerups[i].type == POWERUP_WEAPON)
+        {
           playerWeaponLevel = min(playerWeaponLevel + 1, 3);
-        } else if (powerups[i].type == POWERUP_HEALTH) {
+        }
+        else if (powerups[i].type == POWERUP_HEALTH)
+        {
           lives = min(lives + 1, 5);
         }
         sound.play(SoundSystem::POWERUP);
@@ -887,51 +837,60 @@ public:
   }
 
   // Rendering
-  void render() {
+  void render()
+  {
     canvas.fillSprite(TFT_BLACK);
 
-    if (state == TITLE) {
+    if (state == TITLE)
+    {
       renderTitle();
-    } else if (state == PLAYING) {
+    }
+    else if (state == PLAYING)
+    {
       renderGame();
-    } else if (state == GAME_OVER) {
+    }
+    else if (state == GAME_OVER)
+    {
       renderGameOver();
     }
 
     canvas.pushSprite(0, 0);
   }
 
-  void renderTitle() {
+  void renderTitle()
+  {
     canvas.setTextColor(TFT_CYAN);
     canvas.setTextDatum(MC_DATUM);
     canvas.setTextSize(3);
-    canvas.drawString("SPACE STRIKER", SCREEN_WIDTH/2, SCREEN_HEIGHT/2 - 40);
-    
+    canvas.drawString("SPACE STRIKER", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 40);
+
     canvas.setTextSize(2);
     canvas.setTextColor(TFT_WHITE);
-    canvas.drawString("Touch to Start", SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 20);
-    
+    canvas.drawString("Touch to Start", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 20);
+
     canvas.setTextSize(1);
     canvas.setTextColor(TFT_YELLOW);
-    canvas.drawString("90s Arcade Style", SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 60);
+    canvas.drawString("90s Arcade Style", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 60);
   }
 
-  void renderGameOver() {
+  void renderGameOver()
+  {
     canvas.setTextColor(TFT_RED);
     canvas.setTextDatum(MC_DATUM);
     canvas.setTextSize(3);
-    canvas.drawString("GAME OVER", SCREEN_WIDTH/2, SCREEN_HEIGHT/2 - 40);
-    
+    canvas.drawString("GAME OVER", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 40);
+
     canvas.setTextSize(2);
     canvas.setTextColor(TFT_WHITE);
-    canvas.drawString("Score: " + String(score), SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 20);
-    
+    canvas.drawString("Score: " + String(score), SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 20);
+
     canvas.setTextSize(1);
     canvas.setTextColor(TFT_YELLOW);
-    canvas.drawString("Touch to Restart", SCREEN_WIDTH/2, SCREEN_HEIGHT/2 + 60);
+    canvas.drawString("Touch to Restart", SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 + 60);
   }
 
-  void renderGame() {
+  void renderGame()
+  {
     // Draw scrolling background
     drawBackground();
 
@@ -948,17 +907,21 @@ public:
     input.drawUI();
   }
 
-  void drawBackground() {
+  void drawBackground()
+  {
     // Simple star field
-    for (int y = -32; y < SCREEN_HEIGHT; y += 32) {
-      for (int x = 0; x < SCREEN_WIDTH; x += 40) {
+    for (int y = -32; y < SCREEN_HEIGHT; y += 32)
+    {
+      for (int x = 0; x < SCREEN_WIDTH; x += 40)
+      {
         int starY = (int)(y + scrollY) % SCREEN_HEIGHT;
-        canvas.fillCircle(x + (y/32) * 20, starY, 1, TFT_DARKGREY);
+        canvas.fillCircle(x + (y / 32) * 20, starY, 1, TFT_DARKGREY);
       }
     }
   }
 
-  void drawPlayer() {
+  void drawPlayer()
+  {
     // Simple triangle ship (placeholder for your pixel art)
     // canvas.fillTriangle(
     //   player.pos.x, player.pos.y - player.height/2,
@@ -973,120 +936,138 @@ public:
     //   TFT_WHITE
     // );
 
-    int x = player.pos.x - player.width/2;
-    int y = player.pos.y - player.height/2;
-    canvas.pushImage(x, y, 24, 24, player_ship_map);  
+    int x = player.pos.x - player.width / 2;
+    int y = player.pos.y - player.height / 2;
+    canvas.pushImage(x, y, 24, 24, player_ship_map);
   }
 
-  void drawEnemies() {
-    for (int i = 0; i < MAX_ENEMIES; i++) {
-      if (!enemies[i].active) continue;
-      
-      int x = enemies[i].pos.x - enemies[i].width/2;
-      int y = enemies[i].pos.y - enemies[i].height/2;
-      
+  void drawEnemies()
+  {
+    for (int i = 0; i < MAX_ENEMIES; i++)
+    {
+      if (!enemies[i].active)
+        continue;
+
+      int x = enemies[i].pos.x - enemies[i].width / 2;
+      int y = enemies[i].pos.y - enemies[i].height / 2;
+
       // Choose sprite based on enemy type
-      const uint16_t* sprite;
+      const uint16_t *sprite;
       int w, h;
-      
-      switch(enemies[i].type) {
-        case ENEMY_BASIC:
-          sprite = enemy_basic_map;
-          w = h = 20;
-          break;
-        case ENEMY_FAST:
-          sprite = enemy_fast_map;
-          w = h = 16;
-          break;
-        case ENEMY_TANK:
-          sprite = enemy_tank_map;
-          w = h = 28;
-          break;
+
+      switch (enemies[i].type)
+      {
+      case ENEMY_BASIC:
+        sprite = enemy_basic_map;
+        w = h = 20;
+        break;
+      case ENEMY_FAST:
+        sprite = enemy_fast_map;
+        w = h = 16;
+        break;
+      case ENEMY_TANK:
+        sprite = enemy_tank_map;
+        w = h = 28;
+        break;
       }
-      
+
       canvas.pushImage(x, y, w, h, sprite);
     }
   }
 
-  void drawBullets() {
+  void drawBullets()
+  {
     // Player bullets
-    for (int i = 0; i < MAX_PLAYER_BULLETS; i++) {
-      if (!playerBullets[i].active) continue;
+    for (int i = 0; i < MAX_PLAYER_BULLETS; i++)
+    {
+      if (!playerBullets[i].active)
+        continue;
       int x = playerBullets[i].pos.x - 2;
       int y = playerBullets[i].pos.y - 4;
       canvas.pushImage(x, y, 4, 8, bullet_player_map);
     }
 
     // Enemy bullets
-    for (int i = 0; i < MAX_ENEMY_BULLETS; i++) {
-      if (!enemyBullets[i].active) continue;
+    for (int i = 0; i < MAX_ENEMY_BULLETS; i++)
+    {
+      if (!enemyBullets[i].active)
+        continue;
       int x = enemyBullets[i].pos.x - 2;
       int y = enemyBullets[i].pos.y - 4;
       canvas.pushImage(x, y, 4, 8, bullet_enemy_map);
     }
   }
 
-  void drawPowerups() {
-    for (int i = 0; i < MAX_POWERUPS; i++) {
-      if (!powerups[i].active) continue;
-      
-      int x = powerups[i].pos.x - powerups[i].width/2;
-      int y = powerups[i].pos.y - powerups[i].height/2;
-      
-      const uint16_t* sprite = (powerups[i].type == POWERUP_WEAPON) 
-                                ? powerup_weapon_map 
-                                : powerup_health_map;
-      
+  void drawPowerups()
+  {
+    for (int i = 0; i < MAX_POWERUPS; i++)
+    {
+      if (!powerups[i].active)
+        continue;
+
+      int x = powerups[i].pos.x - powerups[i].width / 2;
+      int y = powerups[i].pos.y - powerups[i].height / 2;
+
+      const uint16_t *sprite = (powerups[i].type == POWERUP_WEAPON)
+                                   ? powerup_weapon_map
+                                   : powerup_health_map;
+
       canvas.pushImage(x, y, 16, 16, sprite);
     }
   }
 
-  void drawExplosions() {
-    for (int i = 0; i < MAX_EXPLOSIONS; i++) {
-      if (!explosions[i].active) continue;
-      
+  void drawExplosions()
+  {
+    for (int i = 0; i < MAX_EXPLOSIONS; i++)
+    {
+      if (!explosions[i].active)
+        continue;
+
       int frame = explosions[i].animFrame;
       float scale = 1.0 + (frame * 0.3);
       int size = explosions[i].width * scale;
-      
+
       // Expanding circles
-      canvas.drawCircle(explosions[i].pos.x, explosions[i].pos.y, 
-                        size/2, TFT_ORANGE);
-      canvas.drawCircle(explosions[i].pos.x, explosions[i].pos.y, 
-                        size/3, TFT_YELLOW);
+      canvas.drawCircle(explosions[i].pos.x, explosions[i].pos.y,
+                        size / 2, TFT_ORANGE);
+      canvas.drawCircle(explosions[i].pos.x, explosions[i].pos.y,
+                        size / 3, TFT_YELLOW);
     }
   }
 
-  void drawParticles() {
-    for (int i = 0; i < MAX_PARTICLES; i++) {
-      if (!particles[i].active) continue;
+  void drawParticles()
+  {
+    for (int i = 0; i < MAX_PARTICLES; i++)
+    {
+      if (!particles[i].active)
+        continue;
       canvas.fillCircle(particles[i].pos.x, particles[i].pos.y, 2, particles[i].color);
     }
   }
-  
-  void drawHUD() {
+
+  void drawHUD()
+  {
     canvas.setTextColor(TFT_WHITE);
     canvas.setTextDatum(TL_DATUM);
     canvas.setTextSize(2);
-    
+
     // Score
     canvas.drawString("SCORE: " + String(score), 10, 10);
-    
+
     // Lives
     canvas.drawString("LIVES:", 10, 40);
-    for (int i = 0; i < lives; i++) {
+    for (int i = 0; i < lives; i++)
+    {
       canvas.fillTriangle(
-        100 + i * 25, 40,
-        95 + i * 25, 50,
-        105 + i * 25, 50,
-        TFT_CYAN
-      );
+          100 + i * 25, 40,
+          95 + i * 25, 50,
+          105 + i * 25, 50,
+          TFT_CYAN);
     }
-    
+
     // Weapon level
     canvas.drawString("WPN: " + String(playerWeaponLevel), 10, 70);
   }
-
 };
 Game game;
 
@@ -1094,7 +1075,8 @@ Game game;
 // ARDUINO SETUP & LOOP
 // ============================================================================
 
-void setup() {
+void setup()
+{
 
   Serial.begin(115200);
   Serial.println("Space Striker Starting...");
@@ -1107,42 +1089,45 @@ void setup() {
   display.init();
   display.setRotation(1);
   display.fillScreen(TFT_BLACK);
-  
+
   // Create sprite for double buffering
   canvas.createSprite(SCREEN_WIDTH, SCREEN_HEIGHT);
   canvas.setColorDepth(16);
-  
+
   // Initialize systems
   sound.init();
   game.init();
-  
+
   Serial.println("Game initialized!");
 }
 
-void loop() {
+void loop()
+{
   static unsigned long lastFrame = 0;
   unsigned long currentTime = millis();
-  
-  if (currentTime - lastFrame >= FRAME_TIME) {
+
+  if (currentTime - lastFrame >= FRAME_TIME)
+  {
     // Update input
     input.update();
-    
+
     // Update game
     game.update();
-    
+
     // Update sound
     sound.update();
-    
+
     // Render
     game.render();
-    
+
     lastFrame = currentTime;
-    
+
     // Debug FPS
     static unsigned long lastFpsUpdate = 0;
     static int frameCount = 0;
     frameCount++;
-    if (currentTime - lastFpsUpdate > 1000) {
+    if (currentTime - lastFpsUpdate > 1000)
+    {
       Serial.print("FPS: ");
       Serial.println(frameCount);
       frameCount = 0;
@@ -1157,66 +1142,66 @@ void loop() {
 
 /*
  * HOW TO ADD YOUR OWN PIXEL ART SPRITES:
- * 
+ *
  * 1. Create sprites as RGB565 arrays:
  *    - Use tools like LVGL Image Converter or custom scripts
  *    - Store in PROGMEM to save RAM
- * 
+ *
  *    Example:
  *    const uint16_t player_sprite[] PROGMEM = {
  *      0x001F, 0x001F, 0x001F, ...
  *    };
- * 
+ *
  * 2. Replace drawing functions:
  *    - In drawPlayer(), replace fillTriangle with:
  *      canvas.pushImage(x, y, width, height, player_sprite);
- * 
+ *
  * 3. Add sprite sheets for animations:
  *    - Store multiple frames
  *    - Update animFrame in entity
  *    - Draw correct frame based on animFrame
- * 
+ *
  * EXTENDING ENEMY TYPES:
- * 
+ *
  * 1. Add new EntityType enum value
  * 2. Add case in spawnEnemy() with unique properties
  * 3. Add custom behavior in updateEnemies():
  *    - Sine wave movement
  *    - Circular patterns
  *    - Formation flying
- * 
+ *
  * ADDING NEW WEAPONS:
- * 
+ *
  * 1. Increase playerWeaponLevel range
  * 2. Add new bullet patterns in updatePlayer()
  * 3. Examples:
  *    - Spread shot
  *    - Homing missiles
  *    - Laser beams
- * 
+ *
  * ADDING BOSS BATTLES:
- * 
+ *
  * 1. Create Boss entity with high HP
  * 2. Add boss-specific update function
  * 3. Implement attack patterns:
  *    - Multiple bullet spreads
  *    - Spawn minions
  *    - Move in patterns
- * 
+ *
  * ADDING PARALLAX BACKGROUNDS:
- * 
+ *
  * 1. Create multiple background layers
  * 2. Scroll at different speeds
  * 3. Use sprites for tiles
- * 
+ *
  * SAVE/LOAD HIGH SCORES:
- * 
+ *
  * 1. Use Preferences library
  * 2. Save on game over
  * 3. Display on title screen
- * 
+ *
  * OPTIMIZATIONS:
- * 
+ *
  * 1. Use spatial hashing for collision detection if too slow
  * 2. Reduce entity counts if frame rate drops
  * 3. Use dirty rectangles for partial screen updates
