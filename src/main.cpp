@@ -10,8 +10,8 @@
 // CONFIGURATION
 // ============================================================================
 
-#define SCREEN_WIDTH 480
-#define SCREEN_HEIGHT 320
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 480
 #define GAME_FPS 30
 #define FRAME_TIME (1000 / GAME_FPS)
 
@@ -610,12 +610,12 @@ public:
   void updatePlayer()
   {
     Vec2 movement = input.getMovement();
-    player.vel = movement * 5.0;
+    player.vel = movement * 10.0;
     player.pos = player.pos + player.vel;
 
     // Clamp to screen
     player.pos.x = constrain(player.pos.x, player.width / 2, SCREEN_WIDTH - player.width / 2);
-    player.pos.y = constrain(player.pos.y, player.height / 2, SCREEN_HEIGHT - player.height / 2 - 20);
+    player.pos.y = constrain(player.pos.y, player.height / 2, SCREEN_HEIGHT - player.height / 2 - 100);
 
     // Shooting
     if (input.isFirePressed() && millis() - lastPlayerShot > 150)
@@ -1087,7 +1087,7 @@ void setup()
 
   // Initialize display
   display.init();
-  display.setRotation(1);
+  display.setRotation(0);
   display.fillScreen(TFT_BLACK);
 
   // Create sprite for double buffering
