@@ -216,7 +216,7 @@ private:
 SoundSystem sound;
 
 // ============================================================================
-// INPUT SYSTEM
+// INPUT SYSTEM WITH MULTITOUCH SUPPORT
 // ============================================================================
 
 class InputSystem
@@ -224,63 +224,112 @@ class InputSystem
 private:
   Vec2 joystickPos;
   bool firePressed;
-  Vec2 touchPos;
   bool isTouching;
-
+  
+  // Multitouch support
+  struct TouchPoint {
+    bool active;
+    Vec2 pos;
+    unsigned long startTime;
+    int id;
+  };
+  
+  static const int MAX_TOUCH_POINTS = 5;
+  TouchPoint touchPoints[MAX_TOUCH_POINTS];
+  
   const int JOYSTICK_RADIUS = 60;
   const int JOYSTICK_CENTER_X = 70;
   const int JOYSTICK_CENTER_Y = SCREEN_HEIGHT - 70;
+  const int FIRE_BUTTON_X = SCREEN_WIDTH - 60;
+  const int FIRE_BUTTON_Y = SCREEN_HEIGHT - 60;
+  const int FIRE_BUTTON_RADIUS = 40;
 
 public:
   void update()
   {
     isTouching = false;
+    joystickPos = Vec2(0, 0);
+    firePressed = false;
+    
+    // Clear old touch points
+    for (int i = 0; i < MAX_TOUCH_POINTS; i++) {
+      touchPoints[i].active = false;
+    }
+    
+    // Get all touch points
     uint16_t tx, ty;
-
-    if (display.getTouch(&tx, &ty))
-    {
+    int touchCount = 0;
+    
+    // Primary touch
+    if (display.getTouch(&tx, &ty)) {
+      touchPoints[0].active = true;
+      touchPoints[0].pos = Vec2(tx, ty);
+      touchPoints[0].id = 0;
       isTouching = true;
-      touchPos = Vec2(tx, ty);
-
-      // Virtual joystick (left side)
-      if (tx < SCREEN_WIDTH / 2)
-      {
+      touchCount++;
+    }
+    
+    // Additional touch points (if controller supports getTouchRaw)
+    lgfx::touch_point_t tp;
+    for (int i = 1; i < MAX_TOUCH_POINTS && i < touchCount + 4; i++) {
+      if (display.getTouchRaw(&tp, i)) {
+        if (tp.size > 0) {  // Valid touch
+          touchPoints[touchCount].active = true;
+          touchPoints[touchCount].pos = Vec2(tp.x, tp.y);
+          touchPoints[touchCount].id = i;
+          touchCount++;
+          isTouching = true;
+        }
+      }
+    }
+    
+    // Process all active touch points
+    for (int i = 0; i < touchCount; i++) {
+      if (!touchPoints[i].active) continue;
+      
+      float tx = touchPoints[i].pos.x;
+      float ty = touchPoints[i].pos.y;
+      
+      // Check if touch is on joystick (left side)
+      if (tx < SCREEN_WIDTH / 2) {
         float dx = tx - JOYSTICK_CENTER_X;
         float dy = ty - JOYSTICK_CENTER_Y;
         float dist = sqrt(dx * dx + dy * dy);
-
-        if (dist > TOUCH_THRESHOLD)
-        {
+        
+        if (dist > TOUCH_THRESHOLD) {
           float maxDist = JOYSTICK_RADIUS;
-          if (dist > maxDist)
-          {
+          if (dist > maxDist) {
             dx = (dx / dist) * maxDist;
             dy = (dy / dist) * maxDist;
           }
           joystickPos = Vec2(dx / maxDist, dy / maxDist);
         }
-        else
-        {
-          joystickPos = Vec2(0, 0);
+      }
+      
+      // Check if touch is on fire button (right side)
+      if (tx > SCREEN_WIDTH / 2) {
+        float dx = tx - FIRE_BUTTON_X;
+        float dy = ty - FIRE_BUTTON_Y;
+        float dist = sqrt(dx * dx + dy * dy);
+        
+        // If touch is within fire button radius OR anywhere on right side
+        if (dist < FIRE_BUTTON_RADIUS + 20 || true) {  // Always fire when touching right side
+          firePressed = true;
         }
       }
-
-      // Fire button (right side)
-      if (tx > SCREEN_WIDTH / 2)
-      {
-        firePressed = true;
-      }
-    }
-    else
-    {
-      joystickPos = Vec2(0, 0);
-      firePressed = false;
     }
   }
 
   Vec2 getMovement() const { return joystickPos; }
   bool isFirePressed() const { return firePressed; }
   bool getTouching() const { return isTouching; }
+  int getActiveTouchCount() const {
+    int count = 0;
+    for (int i = 0; i < MAX_TOUCH_POINTS; i++) {
+      if (touchPoints[i].active) count++;
+    }
+    return count;
+  }
 
   void drawUI()
   {
@@ -288,18 +337,27 @@ public:
     canvas.drawCircle(JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y, JOYSTICK_RADIUS, TFT_DARKGREY);
     canvas.fillCircle(JOYSTICK_CENTER_X, JOYSTICK_CENTER_Y, JOYSTICK_RADIUS - 2,
                       canvas.color565(40, 40, 40));
-
+    
     // Draw joystick stick
     int stickX = JOYSTICK_CENTER_X + joystickPos.x * (JOYSTICK_RADIUS - 20);
     int stickY = JOYSTICK_CENTER_Y + joystickPos.y * (JOYSTICK_RADIUS - 20);
     canvas.fillCircle(stickX, stickY, 20, TFT_WHITE);
-
+    
     // Draw fire button
-    canvas.fillCircle(SCREEN_WIDTH - 60, SCREEN_HEIGHT - 60, 40,
+    canvas.fillCircle(FIRE_BUTTON_X, FIRE_BUTTON_Y, FIRE_BUTTON_RADIUS,
                       firePressed ? TFT_RED : TFT_DARKGREY);
     canvas.setTextColor(TFT_WHITE);
     canvas.setTextDatum(MC_DATUM);
-    canvas.drawString("FIRE", SCREEN_WIDTH - 60, SCREEN_HEIGHT - 60);
+    canvas.setTextSize(1);
+    canvas.drawString("FIRE", FIRE_BUTTON_X, FIRE_BUTTON_Y);
+    
+    // Debug: Draw touch points (optional - comment out in production)
+    for (int i = 0; i < MAX_TOUCH_POINTS; i++) {
+      if (touchPoints[i].active) {
+        canvas.fillCircle(touchPoints[i].pos.x, touchPoints[i].pos.y, 5, TFT_GREEN);
+        canvas.drawString(String(i), touchPoints[i].pos.x, touchPoints[i].pos.y - 10);
+      }
+    }
   }
 };
 
